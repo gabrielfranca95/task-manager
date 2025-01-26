@@ -23,7 +23,10 @@
 
            ;; Listar todas as tarefas
            (GET "/tasks" []
-             (response (json/generate-string (vals @tasks))))
+             (if (empty? @tasks)
+               (response (json/generate-string {:message "Nenhuma tarefa encontrada"}))
+               (response (json/generate-string (vals @tasks)))))
+
 
            ;; Atualizar uma tarefa
            (PUT "/tasks/:id" [id :as req]

@@ -6,7 +6,8 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [ring "1.9.5"]
                  [compojure "1.6.3"]
-                 [cheshire "5.11.0"]]
+                 [cheshire "5.11.0"]
+                 [ring/ring-mock "0.4.0"]]
   :main ^:skip-aot task-manager.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
