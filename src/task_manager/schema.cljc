@@ -26,8 +26,6 @@
 (s/def ::titulo (s/and string? #(not (str/blank? %))))
 (s/def ::descricao string?)
 (s/def ::status (fn [status] (contains? valid-status status)))
-
 (s/def ::create-task (s/keys :req-un [::titulo]
                              :opt-un [::descricao]))
-
 (s/def ::update-task (s/and (s/keys :opt-un [::titulo ::status ::descricao]) not-empty))
