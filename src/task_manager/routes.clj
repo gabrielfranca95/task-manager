@@ -2,7 +2,8 @@
   (:require [compojure.core :refer :all]
             [compojure.route :as route]
             [ring.util.response :refer [response status]]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [task-manager.schema :as schema]))
 
 ;; Banco de dados em memória
 (def tasks (atom {}))
@@ -13,12 +14,12 @@
            ;; Criar uma nova tarefa
            (POST "/tasks" req
              (let [task (json/parse-string (slurp (:body req)) true)]
-               (if (contains? task :titulo)
+               (if (schema/validate-data task ::schema/create-task)
                  (let [id (generate-id)
                        new-task (assoc task :id id :status "pendente")]
                    (swap! tasks assoc id new-task)
                    (response (json/generate-string new-task)))
-                 (-> (response (json/generate-string {:error "O campo 'titulo' é obrigatório"}))
+                 (-> (response (json/generate-string {:error (schema/explain-data task ::schema/create-task)}))
                      (status 400)))))
 
            ;; Listar todas as tarefas
@@ -31,9 +32,13 @@
            ;; Atualizar uma tarefa
            (PUT "/tasks/:id" [id :as req]
              (if-let [task (get @tasks id)]
-               (let [updated-task (merge task (json/parse-string (slurp (:body req)) true))]
-                 (swap! tasks assoc id updated-task)
-                 (response (json/generate-string updated-task)))
+               (let [body (json/parse-string (slurp (:body req)) true)
+                     updated-task (merge task body)]
+                 (if (schema/validate-data body ::schema/update-task)
+                   (do (swap! tasks assoc id updated-task)
+                       (response (json/generate-string updated-task)))
+                   (-> (response (json/generate-string {:error (schema/explain-data body ::schema/update-task)}))
+                       (status 400))))
                ;; Caso o ID seja inválido
                (-> (response (json/generate-string {:error "Tarefa não encontrada"}))
                    (status 404))))

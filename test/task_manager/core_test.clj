@@ -25,7 +25,16 @@
                        app-routes)
           body (parse-json response)]
       (is (= 400 (:status response)))
-      (is (= "O campo 'titulo' é obrigatório" (:error body))))))
+      (is (= "O campo 'titulo' é obrigatório" (:error body)))))
+
+  (testing "Falha ao criar tarefa com campo a mais no body"
+    (let [response (-> (mock/request :post "/tasks")
+                       (mock/body (json/generate-string {:titulo "Com título"
+                                                         :cake "bolinho"}))
+                       app-routes)
+          body (parse-json response)]
+      (is (= 400 (:status response)))
+      (is (= "Erro no formato da requisição, verifique se há algum campo faltando, ou algum campo a mais" (:error body))))))
 
 (deftest test-get-tasks
   (testing "Listar todas as tarefas"
@@ -60,7 +69,33 @@
                        app-routes)
           body (parse-json response)]
       (is (= 404 (:status response)))
-      (is (= "Tarefa não encontrada" (:error body))))))
+      (is (= "Tarefa não encontrada" (:error body)))))
+
+  (testing "Falha ao atualizar status com algo diferente de pendente ou concluido"
+    (let [create-response (-> (mock/request :post "/tasks")
+                              (mock/body (json/generate-string {:titulo "Tarefa antiga"}))
+                              app-routes)
+          task-id (:id (parse-json create-response))
+          response (-> (mock/request :put (str "/tasks/" task-id))
+                       (mock/body (json/generate-string {:titulo "Tarefa com status inválido"
+                                                         :status "invalido"}))
+                       app-routes)
+          body (parse-json response)]
+      (is (= 400 (:status response)))
+      (is (= "Erro ao enviar o status, certifique-se de enviar um dos valores: pendente ou concluido" (:error body)))))
+
+  (testing "Falha ao atualizar task com body vazio"
+    (let [create-response (-> (mock/request :post "/tasks")
+                              (mock/body (json/generate-string {:titulo "Tarefa antiga"}))
+                              app-routes)
+          task-id (:id (parse-json create-response))
+          response (-> (mock/request :put (str "/tasks/" task-id))
+                       (mock/body (json/generate-string {}))
+                       app-routes)
+          body (parse-json response)]
+      (is (= 400 (:status response)))
+      (is (= "Não é permitido enviar um corpo vazio para atualizar uma tarefa"
+             (:error body))))))
 
 (deftest test-delete-task
   (testing "Deletar uma tarefa existente"
